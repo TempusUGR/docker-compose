@@ -130,7 +130,7 @@ services:
     image: api-gateway:latest
     container_name: api-gateway
     ports:
-      - "8090:8090"
+      - "8090:8090" # We would need to remove this, if we want to force HTTPS from APache Reverse Proxy
     restart: always
     networks:
       - calendarugr
