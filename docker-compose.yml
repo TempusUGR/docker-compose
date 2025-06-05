@@ -49,6 +49,9 @@ services:
     restart: always
     networks:
       - calendarugr
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
 
   user-service:
     image: user-service:latest
@@ -177,7 +180,6 @@ networks:
       config:
         - subnet: 172.30.0.0/16 # Changing the subnet because the default one conflicts with eduroam 
           gateway: 172.30.0.1
-
 
 volumes:
   mysql-data:
