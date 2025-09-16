@@ -1,6 +1,9 @@
 #!/bin/bash
 # build-all-services.sh
-# Script para construir los JARs e imágenes Docker de todos los servicios
+# Script para construir los JARs e imágenes Docker de todos los servicios y levantar los contenedores
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+
 
 docker image prune -f  # Limpiar imágenes no utilizadas
 docker container prune -f  # Limpiar contenedores detenidos
@@ -14,6 +17,9 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+# Salvar en variable el directorio en el que me encuentro
+CURRENT_DIR="$PWD"
 
 cd .. # Cambiar al directorio padre para asegurar que estamos en el contexto correcto
 
@@ -47,9 +53,16 @@ build_service() {
     # Entrar al directorio del servicio
     cd "$service"
     
-    # Construir el JAR con Maven Wrapper
+    # Eliminar el directorio target si existe (solución al error de Maven clean)
+    if [ -d "target" ]; then
+        rm -rf target
+    fi
+    
+    # Construir el JAR siempre con Maven global
     echo -e "${GREEN}Ejecutando Maven para $service...${NC}"
-    if ./mvnw clean package -DskipTests; then
+    mvn clean package -DskipTests
+
+    if [ $? -eq 0 ]; then
         echo -e "${GREEN}JAR de $service construido correctamente${NC}"
     else
         echo -e "${RED}Error al construir el JAR de $service${NC}"
@@ -81,8 +94,17 @@ for service in "${SERVICES[@]}"; do
     fi
 done
 
+# ...existing code...
+
 echo -e "\n${GREEN}==================================================${NC}"
 echo -e "${GREEN}Construcción de todos los servicios completada${NC}"
 echo -e "${GREEN}==================================================${NC}"
-echo -e "${YELLOW}Para iniciar todos los contenedores, ejecute:${NC}"
-echo -e "${YELLOW}docker-compose up -d${NC}"
+
+# Volver al directorio donde está el docker-compose.yml
+cd "$CURRENT_DIR"
+
+# Levantar los contenedores con docker-compose
+echo -e "${YELLOW}Levantando todos los contenedores con docker-compose...${NC}"
+docker-compose up -d
+
+echo -e "${GREEN}Todos los contenedores están en ejecución.${NC}"
