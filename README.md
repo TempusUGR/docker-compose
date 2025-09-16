@@ -1,76 +1,84 @@
-# Despliegue de Servicios con Docker Compose
+# TempusUGR - Orquestación con Docker Compose
 
-Este repositorio contiene el archivo `docker-compose.yml` necesario para levantar los servicios de la aplicación. Se asume que las imágenes Docker necesarias y los archivos `.jar` de las aplicaciones ya han sido construidos y están disponibles localmente o en un registro de contenedores configurado.
+Este repositorio contiene la configuración de `docker-compose.yml` para desplegar la infraestructura completa del backend del proyecto **TempusUGR**.
 
-Además, se incluye un script `build_services.sh` para automatizar la generación de las imágenes Docker y la construcción de los archivos `.jar` antes de desplegar los servicios con Docker Compose.
+El propósito es simplificar la puesta en marcha de todos los microservicios y sus dependencias (bases de datos, bus de mensajes) en un entorno de desarrollo o producción, asegurando que todos los componentes se inicien en el orden correcto y se conecten a través de una red compartida.
 
-## Prerrequisitos
+---
 
-Antes de comenzar, asegúrate de tener instalado lo siguiente en tu sistema:
+## 🏗️ Arquitectura Desplegada
 
-* **Docker:** La plataforma de contenedores. Puedes encontrar las instrucciones de instalación en la [documentación oficial de Docker](https://docs.docker.com/engine/install/).
-* **Docker Compose:** Una herramienta para definir y ejecutar aplicaciones multi-contenedor Docker. Se instala generalmente junto con Docker Desktop o se puede instalar por separado siguiendo las instrucciones en la [documentación oficial de Docker Compose](https://docs.docker.com/compose/install/).
-* **Bash:** El shell utilizado para ejecutar el script `build_services.sh`.
+Este archivo `docker-compose` levanta una arquitectura de microservicios contenerizada. Define, configura y enlaza todos los servicios necesarios para que el backend de TempusUGR funcione correctamente.
 
-Y de crear el .env con las variables necesarias.
+Los servicios se comunican entre sí a través de una red Docker personalizada (`calendarugr-net`), utilizando los nombres de servicio como hostnames.
 
-## Despliegue de los Servicios
+---
 
-**Opción 1: Utilizando imágenes y `.jar` pre-construidos**
+## 🛠️ Servicios Gestionados
 
-Si ya tienes las imágenes Docker necesarias construidas y los archivos `.jar` actualizados, puedes desplegar los servicios directamente con Docker Compose:
+La configuración orquesta los siguientes contenedores:
 
-1.  Clona este repositorio en tu máquina local:
+### Microservicios de la Aplicación
+* **`api-gateway`**: Punto de entrada único que enruta las peticiones a los demás servicios.
+* **`eureka-service`**: Servidor de descubrimiento para el registro y localización de los microservicios.
+* **`user-service`**: Gestiona los datos y la lógica de los usuarios.
+* **`auth-service`**: Procesa la autenticación y la generación de tokens JWT.
+* **`schedule-consumer-service`**: Encargado de obtener y almacenar los horarios académicos.
+* **`academic-subscription-service`**: Gestiona las suscripciones y calendarios personalizados.
+* **`mail-service`**: Procesa el envío de correos electrónicos de forma asíncrona.
+
+### Servicios de Soporte (Backing Services)
+* **`mysql-db`**: Base de datos relacional para `user-service` y `schedule-consumer-service`.
+* **`mongo-db`**: Base de datos NoSQL para `academic-subscription-service`.
+* **`rabbitmq`**: Bus de mensajes para la comunicación asíncrona.
+
+---
+
+## 🚀 Puesta en Marcha
+
+### **Prerrequisitos**
+
+* [Docker](https://www.docker.com/get-started/)
+* [Docker Compose](https://docs.docker.com/compose/install/)
+
+### **Configuración**
+
+Este proyecto utiliza un archivo `.env` para gestionar las variables de entorno y los secretos (contraseñas, claves, etc.).
+
+1.  **Crea un archivo `.env`** en la raíz del repositorio.
+
+### **Ejecución**
+
+1.  **Clona el repositorio:**
     ```bash
-    git clone <URL_DEL_REPOSITORIO>
-    cd <nombre_del_repositorio>
+    git clone [https://github.com/TempusUGR/docker-compose.git](https://github.com/TempusUGR/docker-compose.git)
+    cd docker-compose
     ```
-
-2.  Ejecuta el siguiente comando para levantar todos los servicios definidos en `docker-compose.yml`:
+2.  **Levanta todos los servicios:**
+    Ejecuta el siguiente comando en la raíz del proyecto. Docker Compose descargará las imágenes necesarias, creará los contenedores y los iniciará en segundo plano (`-d`).
     ```bash
     docker-compose up -d
     ```
-    El flag `-d` indica que los contenedores se ejecutarán en segundo plano (detached mode).
-
-3.  Para ver el estado de los contenedores, puedes usar el siguiente comando:
+3.  **Verificar el estado:**
+    Para comprobar que todos los contenedores están en ejecución, usa:
     ```bash
     docker-compose ps
     ```
-
-**Opción 2: Utilizando el script `build_services.sh` (si aplica)**
-
-Si necesitas construir las imágenes Docker y/o generar los archivos `.jar` antes de desplegar los servicios, puedes utilizar el script `build_services.sh`.
-
-1.  Asegúrate de que el script tenga permisos de ejecución:
+4.  **Ver los logs:**
+    Para ver los logs de todos los servicios en tiempo real:
     ```bash
-    chmod +x build_services.sh
+    docker-compose logs -f
     ```
-
-2.  Ejecuta el script:
+    Para ver los logs de un servicio específico (por ejemplo, `api-gateway`):
     ```bash
-    ./build_services.sh
+    docker-compose logs -f api-gateway
     ```
-    Este script realizará las tareas necesarias para construir las imágenes y/o los `.jar` según su implementación.
-
-3.  Una vez que el script haya finalizado, puedes desplegar los servicios con Docker Compose como se describe en la **Opción 1**:
+5.  **Detener los servicios:**
+    Para detener y eliminar todos los contenedores definidos en la configuración, ejecuta:
     ```bash
-    docker-compose up -d
+    docker-compose down
     ```
-
-## Configuración
-
-El archivo `docker-compose.yml` contiene la configuración de los diferentes servicios, incluyendo:
-
-* **Imágenes Docker utilizadas:** Se especifican las imágenes que se utilizarán para cada servicio. Asegúrate de que estas imágenes estén disponibles localmente o que Docker Compose pueda acceder a ellas a través de un registro configurado.
-* **Puertos:** Se definen las exposiciones de puertos de los contenedores a la máquina host.
-* **Volúmenes:** Se configuran los volúmenes para la persistencia de datos o para compartir archivos entre el host y los contenedores.
-* **Variables de entorno:** Se definen las variables de entorno necesarias para la configuración de cada servicio.
-
-Revisa y adapta el archivo `docker-compose.yml` según las necesidades específicas de tu aplicación.
-
-## Detener los Servicios
-
-Para detener todos los servicios en ejecución, ejecuta el siguiente comando en el mismo directorio donde se encuentra el archivo `docker-compose.yml`:
-
-```bash
-docker-compose down
+    Si quieres eliminar también los volúmenes de datos (¡CUIDADO: esto borrará los datos de las bases de datos!), usa:
+    ```bash
+    docker-compose down -v
+    ```
