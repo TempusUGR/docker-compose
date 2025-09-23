@@ -36,6 +36,7 @@ SERVICES=(
     "auth-service"
     "api-gateway"
     "academic-subscription-service"
+    "statistics-service"
 )
 
 build_service() {
